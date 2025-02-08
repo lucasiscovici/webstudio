@@ -121,6 +121,7 @@ const fieldDefaultValues = {
   title: `"Untitled"`,
   description: `""`,
   excludePageFromSearch: `true`,
+  protectedPage: false,
   language: `""`,
   socialImageUrl: `""`,
   socialImageAssetId: "",
@@ -201,6 +202,7 @@ const SharedPageValues = z.object({
   title: PageTitle,
   description: z.string().optional(),
   excludePageFromSearch: z.boolean().optional(),
+  protectedPage: z.boolean().optional(),
   language: Language.or(EmptyString),
   socialImageUrl: z.string().optional(),
   status: Status.optional(),
@@ -247,6 +249,7 @@ const validateValues = (
       values.excludePageFromSearch,
       variableValues
     ),
+    protectedPage: values.protectedPage,
     language: computeExpression(values.language, variableValues),
     socialImageUrl: computeExpression(values.socialImageUrl, variableValues),
     status: computeExpression(values.status, variableValues),
@@ -311,6 +314,8 @@ const toFormValues = (
     excludePageFromSearch:
       page.meta.excludePageFromSearch ??
       fieldDefaultValues.excludePageFromSearch,
+    protectedPage:
+      page?.auth?.protectedPage ?? fieldDefaultValues.protectedPage,
     language: page.meta.language ?? fieldDefaultValues.language,
     status: page.meta.status ?? fieldDefaultValues.status,
     redirect: page.meta.redirect ?? fieldDefaultValues.redirect,
@@ -1222,6 +1227,44 @@ const FormFields = ({
               />
             </div>
           </InputErrorsTooltip>
+
+          <Separator />
+
+          <div>
+            <Grid gap={2} css={{ my: theme.spacing[5], mx: theme.spacing[8] }}>
+              <Label htmlFor={fieldIds.socialImageAssetId} text="title">
+                Auth
+              </Label>
+              <BindingControl>
+                <Grid
+                  flow={"column"}
+                  gap={1}
+                  justify={"start"}
+                  align={"center"}
+                  css={{ py: theme.spacing[2] }}
+                >
+                  <Checkbox
+                    id={fieldIds.protectedPage}
+                    disabled={($pages.get()?.auth ?? []).length == 0}
+                    checked={values.protectedPage}
+                    onCheckedChange={() => {
+                      const newValue = !values.protectedPage;
+                      onChange({
+                        field: "protectedPage",
+                        value: newValue,
+                      });
+                    }}
+                  />
+
+                  <InputErrorsTooltip errors={errors.protectedPage}>
+                    <Label htmlFor={fieldIds.protectedPage}>
+                      Protected Page
+                    </Label>
+                  </InputErrorsTooltip>
+                </Grid>
+              </BindingControl>
+            </Grid>
+          </div>
         </fieldset>
 
         {(project?.marketplaceApprovalStatus === "PENDING" ||
@@ -1390,6 +1433,7 @@ const createPage = (pageId: Page["id"], values: Values) => {
         rootInstanceId,
         systemDataSourceId,
         meta: {},
+        auth: { protectedPage: values.protectedPage },
       });
 
       instances.set(rootInstanceId, {
@@ -1433,6 +1477,13 @@ const updatePage = (pageId: Page["id"], values: Partial<Values>) => {
 
     if (values.excludePageFromSearch !== undefined) {
       page.meta.excludePageFromSearch = values.excludePageFromSearch;
+    }
+
+    if (values.protectedPage !== undefined) {
+      if (page.auth === undefined) {
+        page.auth = { protectedPage: false };
+      }
+      page.auth.protectedPage = values.protectedPage;
     }
 
     if (values.language !== undefined) {

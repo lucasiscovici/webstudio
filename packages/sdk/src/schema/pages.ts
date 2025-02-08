@@ -47,6 +47,7 @@ export const documentTypes = ["html", "xml"] as const;
 const commonPageFields = {
   id: PageId,
   name: PageName,
+  auth: z.optional(z.object({ protectedPage: z.boolean() })),
   title: PageTitle,
   history: z.optional(z.array(z.string())),
   rootInstanceId: z.string(),
