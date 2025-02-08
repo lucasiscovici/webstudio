@@ -61,6 +61,7 @@ const env = {
    */
   OPENAI_KEY: process.env.OPENAI_KEY,
   OPENAI_ORG: process.env.OPENAI_ORG,
+  OPENAI_MODEL: process.env.OPENAI_MODEL,
 
   PEXELS_API_KEY: process.env.PEXELS_API_KEY,
 
