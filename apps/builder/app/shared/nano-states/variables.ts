@@ -4,7 +4,7 @@ import {
   matchPathnamePattern,
   tokenizePathnamePattern,
 } from "~/builder/shared/url-pattern";
-import { $publishedOrigin } from "./misc";
+import { $publishedOrigin, $pagesAuth } from "./misc";
 import { $selectedPage } from "../awareness";
 
 export const $dataSourceVariables = atom<Map<DataSource["id"], unknown>>(
@@ -18,10 +18,11 @@ const $selectedPagePath = computed($selectedPage, (page) => page?.path);
 const $selectedPageHistory = computed($selectedPage, (page) => page?.history);
 
 export const $selectedPageDefaultSystem = computed(
-  [$publishedOrigin, $selectedPagePath, $selectedPageHistory],
-  (origin, path, history) => {
+  [$publishedOrigin, $selectedPagePath, $selectedPageHistory, $pagesAuth],
+  (origin, path, history, auth) => {
     const defaultSystem: System = {
       params: {},
+      auth: auth ?? { auth: [], logged: false },
       search: {},
       origin,
     };
@@ -56,6 +57,13 @@ export const mergeSystem = (left: System, right?: System): System => {
       ...left.search,
       ...right?.search,
     },
+    auth: {
+      ...left.auth,
+      ...(right?.auth ?? {
+        auth: left?.auth.auth ?? [],
+        logged: left?.auth?.logged ?? false,
+      }),
+    },
   };
 };
 
@@ -66,6 +74,7 @@ export const updateSystem = (page: Page, update: Partial<System>) => {
     | System;
 
   const newSystem: System = {
+    auth: { auth: [], logged: false },
     search: {},
     params: {},
     origin: $publishedOrigin.get(),

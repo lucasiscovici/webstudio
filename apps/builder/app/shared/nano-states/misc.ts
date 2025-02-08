@@ -28,6 +28,7 @@ import type { AssetType } from "@webstudio-is/asset-uploader";
 import type { ChildrenOrientation } from "node_modules/@webstudio-is/design-system/src/components/primitives/dnd/geometry-utils";
 import { $selectedInstance } from "../awareness";
 import type { UserPlanFeatures } from "../db/user-plan-features.server";
+import { $pages } from "../nano-states/pages";
 
 export const $project = atom<Project | undefined>();
 
@@ -37,6 +38,8 @@ export const $publishedOrigin = computed(
   [$project, $publisherHost],
   (project, publisherHost) => `https://${project?.domain}.${publisherHost}`
 );
+
+export const $pagesAuth = computed([$pages], (pages) => pages?.auth);
 
 export const $dataSources = atom<DataSources>(new Map());
 

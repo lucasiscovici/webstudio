@@ -1245,7 +1245,7 @@ const FormFields = ({
                 >
                   <Checkbox
                     id={fieldIds.protectedPage}
-                    disabled={($pages.get()?.auth ?? []).length == 0}
+                    disabled={($pages.get()?.auth?.auth ?? []).length == 0}
                     checked={values.protectedPage}
                     onCheckedChange={() => {
                       const newValue = !values.protectedPage;

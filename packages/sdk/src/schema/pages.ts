@@ -1,11 +1,5 @@
 import { z } from "zod";
 
-export type System = {
-  params: Record<string, string | undefined>;
-  search: Record<string, string | undefined>;
-  origin: string;
-};
-
 const MIN_TITLE_LENGTH = 2;
 
 const PageId = z.string();
@@ -171,8 +165,15 @@ export const Auths = z.array(Auth);
 
 export type Auths = z.infer<typeof Auths>;
 
+export const AuthsData = z.object({
+  auth: Auths,
+  logged: z.boolean().default(false),
+});
+
+export type AuthsData = z.infer<typeof AuthsData>;
+
 export const Pages = z.object({
-  auth: Auths.optional(),
+  auth: AuthsData.optional(),
   meta: ProjectMeta.optional(),
   compiler: CompilerSettings.optional(),
   redirects: z.array(PageRedirect).optional(),
@@ -184,3 +185,10 @@ export const Pages = z.object({
 });
 
 export type Pages = z.infer<typeof Pages>;
+
+export type System = {
+  params: Record<string, string | undefined>;
+  search: Record<string, string | undefined>;
+  origin: string;
+  auth: AuthsData;
+};

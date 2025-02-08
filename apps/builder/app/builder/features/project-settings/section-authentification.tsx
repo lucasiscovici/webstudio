@@ -46,13 +46,15 @@ export const SectionAuthentication = () => {
   const [authConfigs, setAuthConfigs] = useState<AuthConfig[]>(() => {
     const authData = $pages.get()?.auth;
     if (!authData) return [];
-    return authData.map((auth) => ({
-      type: auth.name,
-      fields: {
-        url: auth.url,
-        ...auth.configs,
-      },
-    }));
+    return (
+      authData?.auth?.map((auth) => ({
+        type: auth.name,
+        fields: {
+          url: auth.url,
+          ...auth.configs,
+        },
+      })) ?? []
+    );
   });
   // Lors du changement de type d'auth, on réinitialise les champs
   const handleSelectChange = (value: string) => {
@@ -86,16 +88,22 @@ export const SectionAuthentication = () => {
   const updateServerStore = (configs: AuthConfig[]) => {
     serverSyncStore.createTransaction([$pages], (pages) => {
       if (!pages) return;
-      pages.auth = [
-        ...configs.map((config) => ({
-          name: config.type,
-          url: config.fields["url"] as string,
-          // Conversion des champs en objet plat en excluant 'url'
-          configs: Object.fromEntries(
-            Object.entries(config.fields).filter(([key]) => key !== "url")
-          ),
-        })),
-      ];
+      if (pages.auth === undefined) {
+        pages.auth = { auth: [], logged: false };
+      }
+      pages.auth = {
+        auth: [
+          ...configs.map((config) => ({
+            name: config.type,
+            url: config.fields["url"] as string,
+            // Conversion des champs en objet plat en excluant 'url'
+            configs: Object.fromEntries(
+              Object.entries(config.fields).filter(([key]) => key !== "url")
+            ),
+          })),
+        ],
+        logged: pages.auth?.logged ?? false,
+      };
     });
   };
 
