@@ -21,6 +21,13 @@ import * as radixComponentMetas from "@webstudio-is/sdk-components-react-radix/m
 import * as radixComponentPropsMetas from "@webstudio-is/sdk-components-react-radix/props";
 import * as radixTemplates from "@webstudio-is/sdk-components-react-radix/templates";
 import { hooks as radixComponentHooks } from "@webstudio-is/sdk-components-react-radix/hooks";
+
+import * as authComponents from "sdk-components-react-auth";
+import * as authComponentMetas from "sdk-components-react-auth/metas";
+import * as authComponentPropsMetas from "sdk-components-react-auth/props";
+import * as authTemplates from "sdk-components-react-auth/templates";
+import { hooks as authComponentHooks } from "sdk-components-react-auth/hooks";
+
 import { ErrorMessage } from "~/shared/error";
 import { $publisher, publish } from "~/shared/pubsub";
 import {
@@ -248,6 +255,14 @@ export const Canvas = () => {
       propsMetas: radixComponentPropsMetas,
       hooks: radixComponentHooks,
       templates: radixTemplates,
+    });
+    registerComponentLibrary({
+      // namespace: "sdk-components-react-auth",
+      components: authComponents,
+      metas: authComponentMetas,
+      propsMetas: authComponentPropsMetas,
+      hooks: authComponentHooks,
+      templates: authTemplates,
     });
     registerComponentLibrary({
       namespace: "@webstudio-is/sdk-components-animation",
