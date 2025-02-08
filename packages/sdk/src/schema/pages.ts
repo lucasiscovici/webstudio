@@ -155,8 +155,23 @@ export const CompilerSettings = z.object({
 export type CompilerSettings = z.infer<typeof CompilerSettings>;
 
 export type Page = z.infer<typeof Page>;
+const Config = z.union([z.string(), z.array(z.string())]);
+
+type Config = z.infer<typeof Config>;
+export const Auth = z.object({
+  name: z.string(),
+  url: z.string(),
+  configs: z.record(Config),
+});
+
+export type Auth = z.infer<typeof Auth>;
+
+export const Auths = z.array(Auth);
+
+export type Auths = z.infer<typeof Auths>;
 
 export const Pages = z.object({
+  auth: Auths.optional(),
   meta: ProjectMeta.optional(),
   compiler: CompilerSettings.optional(),
   redirects: z.array(PageRedirect).optional(),
