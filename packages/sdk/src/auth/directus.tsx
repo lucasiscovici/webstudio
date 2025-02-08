@@ -12,4 +12,8 @@ export class DirectusAuth implements AuthInterface {
     this.NAME = "";
     this.NEEDED_FIELDS = [];
   }
+
+  public static getUrl(url: string, provider: string, redirect_url: string) {
+    return `${url}/auth/login/${provider}?redirect=${redirect_url}`;
+  }
 }
