@@ -156,7 +156,9 @@ type Config = z.infer<typeof Config>;
 export const Auth = z.object({
   name: z.string(),
   url: z.string(),
-  configs: z.record(Config),
+  configs: z.object({
+    providers: z.array(z.string()),
+  }),
 });
 
 export type Auth = z.infer<typeof Auth>;

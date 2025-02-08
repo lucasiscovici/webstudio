@@ -25,8 +25,6 @@ type AuthConfig = {
   fields: Record<string, string | string[]>;
 };
 
-const objectToMap = (obj) => new Map(Object.entries(obj));
-
 // Si vous disposez d'un store pour ces configurations, vous pouvez l'importer, par exemple :
 // import { $authConfigs } from "~/shared/nano-states";
 // Pour cet exemple, on simulera la mise à jour de ce store via serverSyncStore
