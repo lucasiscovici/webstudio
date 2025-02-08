@@ -19,14 +19,16 @@ import { SectionMarketplace } from "./section-marketplace";
 import { leftPanelWidth, rightPanelWidth } from "./utils";
 import type { FunctionComponent } from "react";
 import { $isDesignMode } from "~/shared/nano-states";
+import { SectionAuthentication } from "./section-authentification";
 
-type SectionName = "general" | "redirects" | "publish" | "marketplace";
+type SectionName = "general" | "redirects" | "publish" | "marketplace" | "auth";
 
 const sections = new Map<SectionName, FunctionComponent>([
   ["general", SectionGeneral],
   ["redirects", SectionRedirects],
   ["publish", SectionPublish],
   ["marketplace", SectionMarketplace],
+  ["auth", SectionAuthentication],
 ] as const);
 
 export const ProjectSettingsView = ({
@@ -106,6 +108,7 @@ export const ProjectSettingsView = ({
                 {currentSection === "redirects" && <SectionRedirects />}
                 {currentSection === "publish" && <SectionPublish />}
                 {currentSection === "marketplace" && <SectionMarketplace />}
+                {currentSection === "auth" && <SectionAuthentication />}
                 <div />
               </Grid>
             </ScrollArea>
