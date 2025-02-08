@@ -45,6 +45,7 @@ export type PropValue =
   | { type: "json"; value: unknown }
   | { type: "string[]"; value: string[] }
   | { type: "expression"; value: string }
+  | { type: "auth"; value: Extract<Prop, { type: "auth" }>["value"] }
   | { type: "asset"; value: Asset["id"] }
   | { type: "page"; value: Extract<Prop, { type: "page" }>["value"] }
   | { type: "action"; value: Extract<Prop, { type: "action" }>["value"] };

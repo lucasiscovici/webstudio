@@ -4,6 +4,7 @@ import { NumberControl } from "./number";
 import { CheckControl } from "./check";
 import { RadioControl } from "./radio";
 import { SelectControl } from "./select";
+import { AuthControl } from "./auth";
 import { BooleanControl } from "./boolean";
 import { FileControl } from "./file";
 import { UrlControl } from "./url";
@@ -86,6 +87,10 @@ export const renderControl = ({
 
   if (meta.control === "select") {
     return <SelectControl key={key} meta={meta} prop={prop} {...rest} />;
+  }
+
+  if (meta.control == "auth") {
+    return <AuthControl key={key} meta={meta} prop={prop} {...rest} />;
   }
 
   if (meta.control === "file") {

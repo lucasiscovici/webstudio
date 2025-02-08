@@ -48,6 +48,18 @@ export const Prop = z.union([
   }),
   z.object({
     ...baseProp,
+    type: z.literal("auth"),
+    value: z.union([
+      z.string(), // auth
+      z.object({
+        auth: z.string(),
+        provider: z.string(),
+        url: z.string(),
+      }),
+    ]),
+  }),
+  z.object({
+    ...baseProp,
     type: z.literal("string[]"),
     value: z.array(z.string()),
   }),

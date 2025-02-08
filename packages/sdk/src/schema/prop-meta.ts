@@ -135,6 +135,13 @@ const Url = z.object({
   defaultValue: z.string().optional(),
 });
 
+const Auth = z.object({
+  ...common,
+  control: z.literal("auth"),
+  type: z.literal("string"),
+  defaultValue: z.string().optional(),
+});
+
 const Json = z.object({
   ...common,
   control: z.literal("json"),
@@ -168,6 +175,7 @@ const TextContent = z.object({
 });
 
 export const PropMeta = z.union([
+  Auth,
   Number,
   Range,
   Text,
