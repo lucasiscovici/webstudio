@@ -1,5 +1,11 @@
 import { atom, computed } from "nanostores";
-import type { DataSource, Page, Resource, System } from "@webstudio-is/sdk";
+import {
+  Auth,
+  type DataSource,
+  type Page,
+  type Resource,
+  type System,
+} from "@webstudio-is/sdk";
 import {
   matchPathnamePattern,
   tokenizePathnamePattern,
@@ -22,7 +28,7 @@ export const $selectedPageDefaultSystem = computed(
   (origin, path, history, auth) => {
     const defaultSystem: System = {
       params: {},
-      auth: auth ?? { auth: [], logged: false },
+      auth: auth ?? { auth: {}, currAuth: Auth.parse({}) },
       search: {},
       origin,
     };
@@ -61,7 +67,7 @@ export const mergeSystem = (left: System, right?: System): System => {
       ...left.auth,
       ...(right?.auth ?? {
         auth: left?.auth.auth ?? [],
-        logged: left?.auth?.logged ?? false,
+        currAuth: left?.auth?.currAuth ?? null,
       }),
     },
   };
@@ -74,7 +80,7 @@ export const updateSystem = (page: Page, update: Partial<System>) => {
     | System;
 
   const newSystem: System = {
-    auth: { auth: [], logged: false },
+    auth: { auth: {}, currAuth: Auth.parse({}) },
     search: {},
     params: {},
     origin: $publishedOrigin.get(),

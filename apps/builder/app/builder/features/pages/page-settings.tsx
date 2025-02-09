@@ -58,6 +58,7 @@ import {
   PanelTitle,
   TitleSuffixSpacer,
   FloatingPanelProvider,
+  SelectItem,
 } from "@webstudio-is/design-system";
 import {
   ChevronsLeftIcon,
@@ -112,6 +113,7 @@ import type { UserPlanFeatures } from "~/shared/db/user-plan-features.server";
 import { useUnmount } from "~/shared/hook-utils/use-mount";
 import { Card } from "../marketplace/card";
 import { selectInstance } from "~/shared/awareness";
+import { Row } from "../settings-panel/shared";
 
 const fieldDefaultValues = {
   name: "Untitled",
@@ -122,6 +124,7 @@ const fieldDefaultValues = {
   description: `""`,
   excludePageFromSearch: `true`,
   protectedPage: false,
+  authName: "",
   language: `""`,
   socialImageUrl: `""`,
   socialImageAssetId: "",
@@ -203,6 +206,7 @@ const SharedPageValues = z.object({
   description: z.string().optional(),
   excludePageFromSearch: z.boolean().optional(),
   protectedPage: z.boolean().optional(),
+  authName: z.string().optional(),
   language: Language.or(EmptyString),
   socialImageUrl: z.string().optional(),
   status: Status.optional(),
@@ -250,6 +254,7 @@ const validateValues = (
       variableValues
     ),
     protectedPage: values.protectedPage,
+    authName: values.authName,
     language: computeExpression(values.language, variableValues),
     socialImageUrl: computeExpression(values.socialImageUrl, variableValues),
     status: computeExpression(values.status, variableValues),
@@ -316,6 +321,7 @@ const toFormValues = (
       fieldDefaultValues.excludePageFromSearch,
     protectedPage:
       page?.auth?.protectedPage ?? fieldDefaultValues.protectedPage,
+    authName: page.auth?.authName ?? fieldDefaultValues.authName,
     language: page.meta.language ?? fieldDefaultValues.language,
     status: page.meta.status ?? fieldDefaultValues.status,
     redirect: page.meta.redirect ?? fieldDefaultValues.redirect,
@@ -1237,30 +1243,56 @@ const FormFields = ({
               </Label>
               <BindingControl>
                 <Grid
-                  flow={"column"}
+                  flow={"row"}
                   gap={1}
                   justify={"start"}
                   align={"center"}
                   css={{ py: theme.spacing[2] }}
                 >
-                  <Checkbox
-                    id={fieldIds.protectedPage}
-                    disabled={($pages.get()?.auth?.auth ?? []).length == 0}
-                    checked={values.protectedPage}
-                    onCheckedChange={() => {
-                      const newValue = !values.protectedPage;
-                      onChange({
-                        field: "protectedPage",
-                        value: newValue,
-                      });
-                    }}
-                  />
+                  <Grid gap={1} flow={"column"}>
+                    <Checkbox
+                      id={fieldIds.protectedPage}
+                      disabled={($pages.get()?.auth?.auth ?? []).length == 0}
+                      checked={values.protectedPage}
+                      onCheckedChange={() => {
+                        const newValue = !values.protectedPage;
+                        onChange({
+                          field: "protectedPage",
+                          value: newValue,
+                        });
+                      }}
+                    />
 
-                  <InputErrorsTooltip errors={errors.protectedPage}>
-                    <Label htmlFor={fieldIds.protectedPage}>
-                      Protected Page
-                    </Label>
-                  </InputErrorsTooltip>
+                    <InputErrorsTooltip errors={errors.protectedPage}>
+                      <Label htmlFor={fieldIds.protectedPage}>
+                        Protected Page
+                      </Label>
+                    </InputErrorsTooltip>
+                  </Grid>
+                  {values?.protectedPage && (
+                    <>
+                      <Grid gap={1} flow={"column"}>
+                        <InputErrorsTooltip errors={errors.authName}>
+                          <Label htmlFor={fieldIds.authName}>Auth Name</Label>
+                        </InputErrorsTooltip>
+                        <Select
+                          value={values.authName}
+                          options={($pages.get()?.auth?.auth ?? []).map(
+                            (auth) => auth.name
+                          )}
+                          onChange={(auth) =>
+                            onChange({ field: "authName", value: auth })
+                          }
+                        >
+                          {($pages.get()?.auth?.auth ?? []).map((auth) => (
+                            <SelectItem value={auth.name}>
+                              {auth.name}
+                            </SelectItem>
+                          ))}
+                        </Select>
+                      </Grid>
+                    </>
+                  )}
                 </Grid>
               </BindingControl>
             </Grid>
@@ -1433,7 +1465,10 @@ const createPage = (pageId: Page["id"], values: Values) => {
         rootInstanceId,
         systemDataSourceId,
         meta: {},
-        auth: { protectedPage: values.protectedPage },
+        auth: {
+          protectedPage: values.protectedPage,
+          authName: values.authName,
+        },
       });
 
       instances.set(rootInstanceId, {
@@ -1484,6 +1519,13 @@ const updatePage = (pageId: Page["id"], values: Partial<Values>) => {
         page.auth = { protectedPage: false };
       }
       page.auth.protectedPage = values.protectedPage;
+    }
+
+    if (values.authName !== undefined) {
+      if (page.auth === undefined) {
+        page.auth = { protectedPage: false, authName: "" };
+      }
+      page.auth.authName = values.authName;
     }
 
     if (values.language !== undefined) {

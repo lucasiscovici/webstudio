@@ -17,7 +17,8 @@ import { $pages } from "~/shared/nano-states";
 // Importez vos classes d'auth.
 // Par exemple, si vous avez exporté DirectusAuth dans ~/builder/features/auth/index.ts
 // et que l’export par défaut est un objet indexé par le nom de l’auth :
-import { AuthList } from "@webstudio-is/sdk";
+import { Auth, AuthList } from "@webstudio-is/sdk";
+import { redirect } from "react-router-dom";
 
 // Exemple de type pour la config d'auth
 type AuthConfig = {
@@ -45,10 +46,11 @@ export const SectionAuthentication = () => {
     const authData = $pages.get()?.auth;
     if (!authData) return [];
     return (
-      authData?.auth?.map((auth) => ({
+      Object.values(authData?.auth ?? []).map((auth) => ({
         type: auth.name,
         fields: {
           url: auth.url,
+          redirect_url: auth.redirect_url,
           ...auth.configs,
         },
       })) ?? []
@@ -87,21 +89,51 @@ export const SectionAuthentication = () => {
     serverSyncStore.createTransaction([$pages], (pages) => {
       if (!pages) return;
       if (pages.auth === undefined) {
-        pages.auth = { auth: [], logged: false };
+        pages.auth = { auth: {}, currAuth: Auth.parse({}) };
       }
-      pages.auth = {
-        auth: [
-          ...configs.map((config) => ({
-            name: config.type,
-            url: config.fields["url"] as string,
-            // Conversion des champs en objet plat en excluant 'url'
-            configs: Object.fromEntries(
-              Object.entries(config.fields).filter(([key]) => key !== "url")
-            ),
-          })),
-        ],
-        logged: pages.auth?.logged ?? false,
-      };
+      const newAuth = {};
+      configs.forEach((config) => {
+        newAuth[config.type] = {
+          name: config.type,
+          url: config.fields["url"] as string,
+          redirect_url: (config.fields?.["redirect_url"] ?? "") as string,
+          // Conversion des champs en objet plat en excluant 'url'
+          configs: {
+            providers: (config.fields?.["providers"] ?? []) as string[],
+          },
+          token: undefined,
+          logged: false,
+        };
+      });
+
+      pages.auth!.auth = newAuth;
+      pages.auth!.currAuth = Auth.parse({});
+
+      // const auths= {
+      //   ...configs.map((config) => ({
+      //     name: config.type,
+      //     url: config.fields["url"] as string,
+      //     redirect_url: (config.fields?.["redirect_url"] ?? "") as string,
+      //     // Conversion des champs en objet plat en excluant 'url'
+      //     configs: {
+      //       providers: (config.fields?.["providers"] ?? []) as string[],
+      //     }
+      //   })),
+      // }
+      // pages.auth = {
+      //   auth:
+      //     ...configs.map((config) => ({
+      //       name: config.type,
+      //       url: config.fields["url"] as string,
+      //       redirect_url: (config.fields?.["redirect_url"] ?? "") as string,
+      //       // Conversion des champs en objet plat en excluant 'url'
+      //       configs: {
+      //         providers: (config.fields?.["providers"] ?? []) as string[],
+      //       }
+      //     })),
+      //   ],
+      //   logged: pages.auth?.logged ?? false,
+      // };
     });
   };
 

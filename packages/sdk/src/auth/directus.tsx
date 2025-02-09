@@ -7,6 +7,7 @@ export class DirectusAuth implements AuthInterface {
   public static NEEDED_FIELDS: Field[] = [
     { name: "url", type: "string" },
     { name: "providers", type: "string[]" },
+    { name: "redirect_url", type: "string" },
   ];
   constructor() {
     this.NAME = "";

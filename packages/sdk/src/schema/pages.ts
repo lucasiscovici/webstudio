@@ -41,7 +41,12 @@ export const documentTypes = ["html", "xml"] as const;
 const commonPageFields = {
   id: PageId,
   name: PageName,
-  auth: z.optional(z.object({ protectedPage: z.boolean() })),
+  auth: z.optional(
+    z.object({
+      protectedPage: z.boolean().default(false),
+      authName: z.string().optional(),
+    })
+  ),
   title: PageTitle,
   history: z.optional(z.array(z.string())),
   rootInstanceId: z.string(),
@@ -153,23 +158,30 @@ export type Page = z.infer<typeof Page>;
 const Config = z.union([z.string(), z.array(z.string())]);
 
 type Config = z.infer<typeof Config>;
-export const Auth = z.object({
-  name: z.string(),
-  url: z.string(),
-  configs: z.object({
-    providers: z.array(z.string()),
-  }),
-});
+export const Auth = z
+  .object({
+    name: z.string().default("auth"),
+    url: z.string().default("http://localhost:8055"),
+    redirect_url: z.string().optional().nullable().default("redirect_url"),
+    configs: z
+      .object({
+        providers: z.array(z.string()),
+      })
+      .default({ providers: [] }),
+    logged: z.boolean().default(false),
+    token: z.string().optional().default("token"),
+  })
+  .default({});
 
 export type Auth = z.infer<typeof Auth>;
 
-export const Auths = z.array(Auth);
+export const Auths = z.record(z.string(), Auth);
 
 export type Auths = z.infer<typeof Auths>;
 
 export const AuthsData = z.object({
   auth: Auths,
-  logged: z.boolean().default(false),
+  currAuth: Auth.optional().nullable().default(Auth.parse({})),
 });
 
 export type AuthsData = z.infer<typeof AuthsData>;
