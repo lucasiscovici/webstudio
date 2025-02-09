@@ -1,3 +1,4 @@
+import { AuthList, Auths } from "@webstudio-is/sdk";
 import { forwardRef, type ComponentProps } from "react";
 
 import * as SocialButtons from "react-social-login-buttons";
@@ -26,7 +27,15 @@ type Props = Omit<ComponentProps<"a">, "target" | "download"> & {
 
 export const LinkAuth = forwardRef<
   HTMLAnchorElement,
-  Props & { $webstudio$canvasOnly$assetId?: string | undefined }
+  Props & {
+    $webstudio$canvasOnly$assetId?: string | undefined;
+    auth: {
+      auth?: string;
+      provider?: string;
+      url?: string;
+      redirect_url?: string;
+    };
+  }
 >((props, ref) => {
   const {
     children,
@@ -37,7 +46,7 @@ export const LinkAuth = forwardRef<
   if (rest?.auth?.auth === undefined || rest?.auth?.provider === undefined) {
     return <div>Please select an auth and provider</div>;
   }
-  const buttonName = `${rest.auth.provider.capitalize()}LoginButton`;
+  const buttonName = `${rest?.auth.provider?.capitalize()}LoginButton`;
   let ButtonComponent = SocialButtons[buttonName];
 
   // If not found, check if it's under Y.default
@@ -54,13 +63,20 @@ export const LinkAuth = forwardRef<
     return <div>Le composant {rest?.auth?.provider ?? ""} n'existe pas.</div>;
   }
   // rest.href = url;
-
-  console.log(rest);
+  let href = "";
+  const authComponent = AuthList?.[rest?.auth.auth];
+  if (authComponent) {
+    href = authComponent.getUrl(
+      rest?.auth?.url,
+      rest?.auth?.provider,
+      rest?.auth?.redirect_url
+    );
+  }
 
   return (
     <div>
-      <a {...props} href={rest?.auth?.url}>
-        <ButtonComponent onClick={() => {}} />
+      <a {...props} href={href}>
+        <ButtonComponent />
       </a>
     </div>
   );

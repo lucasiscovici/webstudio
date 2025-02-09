@@ -1,4 +1,11 @@
-import { type ReactNode, useEffect, useId, useMemo, useState } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+  useCallback,
+} from "react";
 import { useStore } from "@nanostores/react";
 import { computed } from "nanostores";
 import {
@@ -21,7 +28,12 @@ import {
   PhoneIcon,
 } from "@webstudio-is/icons";
 import type { Folder, Instance, Page } from "@webstudio-is/sdk";
-import { AuthList } from "@webstudio-is/sdk";
+import {
+  AuthList,
+  decodeDataSourceVariable,
+  generateObjectExpression,
+  parseObjectExpression,
+} from "@webstudio-is/sdk";
 import {
   findParentFolderByChildId,
   findTreeInstanceIds,
@@ -62,115 +74,151 @@ const Row = ({ children }: { children: ReactNode }) => (
   </Flex>
 );
 
+const Col = ({ children }: { children: ReactNode }) => (
+  <Flex css={{ height: theme.spacing[13] }} direction={"column"}>
+    {children}
+  </Flex>
+);
+
 const getName = (data: { name: string }) => data.name;
 const getHash = (data: { hash: string }) => data.hash;
 const getInstanceId = (data: { instanceId: string }) => data.instanceId;
 
-const BasePage = ({ prop, onChange }: BaseControlProps) => {
+const BasePage: React.FC<BaseControlProps> = ({ prop, value, onChange }) => {
+  // 1. Récupération des données du store
   const pages = useStore($pages);
   const system = useStore($selectedPageDefaultSystem);
-  const { allAuth } = useMemo(() => {
-    const allAuth = pages?.auth?.auth ?? [];
-    // const allAuth = []
-    // // const pageSelectOptions = new Map<
-    // //   Folder["id"],
-    // //   { name: Folder["name"]; pages: Array<Page> }
-    // // >();
-    // for (const auth of auths) {
-    //   allAuth.push(auth.)
-    // //   let group = pageSelectOptions.get(folder.id);
-    // //   if (group === undefined) {
-    // //     group = { name: folder.name, pages: [] };
-    // //     pageSelectOptions.set(folder.id, group);
-    // //   }
-    // //   group.pages.push(auth);
-    // }
-    return { allAuth };
-  }, [pages]);
+  const allAuth = useMemo(() => pages?.auth?.auth ?? [], [pages]);
 
-  const [url, setUrl] = useState("");
-
-  const selectedAuth =
-    prop?.type === "auth"
-      ? typeof prop.value === "string"
-        ? prop.value
-        : prop.value.auth
-      : undefined;
-
-  const section = selectedAuth
-    ? allAuth?.find(({ name }) => name === selectedAuth)
-    : {};
-
-  const sectionSelectOptions = section?.configs?.providers ?? [];
-
-  const sectionProviderId =
-    prop?.type === "auth" && typeof prop.value !== "string"
-      ? prop.value.provider
-      : undefined;
-
-  const sectionSelectValue = sectionProviderId ?? undefined;
-
-  useEffect(() => {
-    if (selectedAuth && sectionSelectValue) {
-      const AuthComponent = AuthList[selectedAuth];
-      const inner_url = AuthComponent.getUrl(
-        section?.url,
-        sectionSelectValue,
-        system.origin
-      );
-      onChange({
-        type: "auth",
-        value: {
-          auth: selectedAuth as string,
-          provider: sectionSelectValue as string,
-          url: inner_url,
-        },
-      });
+  // 2. Conversion de la chaîne JSON en objet AuthValue
+  const initialAuthValue = useMemo(() => {
+    if (prop?.type === "auth") {
+      // En mode "auth", on suppose que prop.value est déjà un objet AuthValue.
+      return prop.value;
+    } else if (prop?.type === "expression") {
+      // En mode "expression", la valeur calculée est passée dans "value" (JSON string).
+      try {
+        return value ? JSON.parse(value) : { auth: null, provider: null }; //url: null
+      } catch (error) {
+        console.error("Erreur lors du parsing de value :", error);
+        return { auth: null, provider: null }; // url: null
+      }
     }
-  }, [selectedAuth, sectionSelectValue, system]);
+    return { auth: null, provider: null }; // url: null
+  }, [prop, value]);
 
+  const handleLocalValueChange = useCallback(
+    (newValue) => {
+      if (prop?.type === "expression") {
+        const pv = parseObjectExpression(prop.value);
+        for (const [key, value] of pv.entries()) {
+          const element = value;
+          if (decodeDataSourceVariable(element)) {
+            updateExpressionValue(element, newValue[key]);
+          } else {
+            pv.set(key, JSON.stringify(newValue[key]));
+          }
+        }
+        Object.entries(newValue).forEach(([key, value]) => {
+          if (!pv.has(key)) {
+            pv.set(key, JSON.stringify(value));
+          }
+        });
+
+        const gen = generateObjectExpression(pv);
+        if (gen !== prop.value) {
+          onChange({ type: "expression", value: gen });
+        }
+      } else {
+        onChange({ type: "auth", value: newValue });
+      }
+    },
+    [prop, onChange]
+  );
+  // 3. Gestion locale de la valeur et synchronisation via onChange
+  const localValue = useLocalValue(initialAuthValue, handleLocalValueChange);
+
+  // 4. Extraction des valeurs locales
+  const { auth: selectedAuth, provider: selectedProvider } = localValue.value;
+
+  // 5. Recherche de la configuration associée à l'authentification sélectionnée
+  const currentAuthConfig = useMemo(() => {
+    return allAuth.find((config) => config.name === selectedAuth);
+  }, [selectedAuth, allAuth]);
+
+  // Options disponibles pour le provider
+  const providerOptions = currentAuthConfig?.configs?.providers ?? [];
+
+  // 6. Mise à jour automatique de l'URL dès qu'une auth et un provider sont définis
+  useEffect(() => {
+    if (selectedAuth && selectedProvider && currentAuthConfig) {
+      localValue.set({
+        auth: selectedAuth,
+        provider: selectedProvider,
+        url: currentAuthConfig.url,
+        redirect_url: currentAuthConfig?.redirect_url ?? system.origin,
+      }); //, url: newUrl
+      localValue.save();
+    }
+  }, [selectedAuth, selectedProvider, currentAuthConfig, system.origin]); // currentUrl
+
+  // 7. Gestionnaires d'événements
+  const handleAuthChange = useCallback(
+    (newAuth: string) => {
+      // Lors d'un changement d'auth, on réinitialise le provider et l'URL
+      localValue.set({ auth: newAuth, provider: selectedProvider }); // url: currentUrl
+    },
+    [localValue]
+  );
+
+  const handleProviderChange = useCallback(
+    (newProvider: string) => {
+      localValue.set({ auth: selectedAuth, provider: newProvider }); // url: currentUrl
+      localValue.save();
+    },
+    [selectedAuth, localValue]
+  );
+
+  // 8. Rendu du composant
   return (
     <>
+      {/* Sélection de l'authentification */}
       <Row>
         <Select
-          value={selectedAuth}
-          options={allAuth.map(getName)}
-          onChange={(name) => onChange({ type: "auth", value: name })}
-          placeholder="Choose Auth"
+          value={selectedAuth || ""}
+          onChange={handleAuthChange}
+          placeholder="Choisir une authentification"
           fullWidth
+          options={allAuth.map(getName)}
         >
-          {allAuth.map(({ name }) => {
-            return (
-              <SelectItem key={name} value={name}>
-                {name}
-              </SelectItem>
-            );
-          })}
+          {allAuth.map((config) => (
+            <SelectItem key={config.name} value={config.name}>
+              {config.name}
+            </SelectItem>
+          ))}
         </Select>
       </Row>
+
+      {/* Sélection du provider */}
       <Row>
         <Select
-          key={selectedAuth}
-          disabled={sectionSelectOptions.length === 0}
+          value={selectedProvider || ""}
+          onChange={handleProviderChange}
+          disabled={providerOptions.length === 0}
           placeholder={
-            sectionSelectOptions.length === 0
-              ? sectionProviderId
-                ? "Selected Auth has no providers"
-                : "No providers available"
-              : "Choose Provider"
-          }
-          value={sectionSelectValue}
-          options={sectionSelectOptions}
-          // getLabel={getHash}
-          // getValue={getInstanceId}
-          onChange={(provider: string) =>
-            onChange({
-              type: "auth",
-              value: { auth: selectedAuth as string, provider, url },
-            })
+            providerOptions.length === 0
+              ? "Aucun provider disponible"
+              : "Choisir un provider"
           }
           fullWidth
-        />
+          options={providerOptions}
+        >
+          {providerOptions.map((provider: string) => (
+            <SelectItem key={provider} value={provider}>
+              {provider}
+            </SelectItem>
+          ))}
+        </Select>
       </Row>
     </>
   );
@@ -186,7 +234,7 @@ export const AuthControl = ({
   onChange,
   onDelete,
 }: UrlControlProps) => {
-  const value = String(computedValue ?? "");
+  const value = JSON.stringify(computedValue ?? "");
   const id = useId();
 
   const BaseControl = BasePage;
@@ -198,7 +246,6 @@ export const AuthControl = ({
   const { overwritable, variant } = useBindingState(
     prop?.type === "expression" ? prop.value : undefined
   );
-  console.log(computedValue, prop, meta);
 
   return (
     <VerticalLayout
@@ -224,17 +271,17 @@ export const AuthControl = ({
           scope={scope}
           aliases={aliases}
           validate={(value) => {
-            if (value !== undefined && typeof value !== "string") {
+            if (value !== undefined && typeof value !== "object") {
               return `${label} expects a string value, page or file`;
             }
           }}
           variant={variant}
-          value={expression}
+          value={expression ?? JSON.stringify({ auth: null, provider: null })}
           onChange={(newExpression) =>
             onChange({ type: "expression", value: newExpression })
           }
           onRemove={(evaluatedValue) =>
-            onChange({ type: "string", value: String(evaluatedValue) })
+            onChange({ type: "auth", value: { auth: null, provider: null } })
           }
         />
       </BindingControl>

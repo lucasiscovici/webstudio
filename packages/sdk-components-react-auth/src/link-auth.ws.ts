@@ -50,5 +50,5 @@ export const propsMeta: WsComponentPropsMeta = {
       required: true,
     },
   },
-  initialProps: ["id", "className", "auth", "href"],
+  initialProps: ["id", "className", "auth"],
 };
